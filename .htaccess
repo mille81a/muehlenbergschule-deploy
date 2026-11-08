@@ -1,0 +1,211 @@
+# Mühlenbergschule Osloß – Apache-Konfiguration für OVH-Webspace
+# (statische Astro-Seite, trailingSlash: always)
+# Ein Ordner für Live (www.) UND Vorschau (vorschau.) – Unterschied nur per Hostname.
+
+Options -Indexes
+ErrorDocument 404 /404.html
+AddDefaultCharset utf-8
+AddType video/mp4 .mp4
+AddType image/webp .webp
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Ohne www → www (nur Hauptdomain; vorschau.* bleibt erreichbar)
+  RewriteCond %{HTTP_HOST} ^muehlenbergschule-osloss\.de$ [NC]
+  RewriteRule ^ https://www.muehlenbergschule-osloss.de%{REQUEST_URI} [L,R=301]
+  # HTTPS erzwingen (OVH-Empfehlung: Port-Abfrage statt %{HTTPS})
+  RewriteCond %{SERVER_PORT} 80
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Vorschau-Subdomain: für Suchmaschinen gesperrt
+  RewriteCond %{HTTP_HOST} ^vorschau\. [NC]
+  RewriteRule ^robots\.txt$ /robots-vorschau.txt [L]
+
+  # Alte WordPress-Uploads (PDFs) → /dokumente/
+  RewriteRule ^wp-content/uploads/\d{4}/\d{2}/(.+\.pdf)$ /dokumente/$1 [L,R=301,NC]
+  # Alte WordPress-Systempfade
+  RewriteRule ^(wp-admin|wp-login\.php|wp-json|xmlrpc\.php|feed)(/.*)?$ / [L,R=301]
+  RewriteRule ^(author|category)/ /news/ [L,R=301]
+</IfModule>
+
+# Umgezogene / entfernte WordPress-Seiten
+RedirectMatch 301 ^/newsarchiv/page/(\d+)/?$ /news/$1/
+RedirectMatch 301 ^/newsarchiv/?$ /news/
+RedirectMatch 301 ^/iserv/?$ https://gsosloss.de/iserv/app/login
+RedirectMatch 301 ^/eltern/infektionsschutz/?$ /formulare/
+RedirectMatch 301 ^/eltern/schulferien-feiertage/?$ /schulleben/termine/
+RedirectMatch 301 ^/leitbild/kooperationen/?$ /leitbild/
+RedirectMatch 301 ^/schulleben/?$ /news/
+RedirectMatch 301 ^/startseite/?$ /
+
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow" "expr=%{HTTP_HOST} =~ /^vorschau\./"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+
+  # Astro-Assets haben Hash im Namen → 1 Jahr cachen
+  <If "%{REQUEST_URI} =~ m#^/_astro/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(pdf|mp4|png|ico|svg)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml application/xml text/plain
+</IfModule>
+
+# >>> NEWS-REDIRECTS (generiert von scripts/migrate-wp.mjs)
+RedirectMatch 301 ^/vfl-stadiontour/?$ /news/vfl-stadiontour/
+RedirectMatch 301 ^/gemeinsam-lesen-gemeinsam-wachsen/?$ /news/gemeinsam-lesen-gemeinsam-wachsen/
+RedirectMatch 301 ^/herbst-bastelspass-im-haus-empatica/?$ /news/herbst-bastelspass-im-haus-empatica/
+RedirectMatch 301 ^/ausflug-ins-museumsdorf-diesdorf/?$ /news/ausflug-ins-museumsdorf-diesdorf/
+RedirectMatch 301 ^/zum-zweiten-mal-ausgezeichnet-umweltschule-2026/?$ /news/zum-zweiten-mal-ausgezeichnet-umweltschule-2026/
+RedirectMatch 301 ^/🐺-ueberraschungsbesuch-von-woelfi/?$ /news/ueberraschungsbesuch-von-woelfi/
+RedirectMatch 301 ^/🚒-wenns-brennt-muss-jeder-wissen-was-zu-tun-ist/?$ /news/wenns-brennt-muss-jeder-wissen-was-zu-tun-ist/
+RedirectMatch 301 ^/herzlich-willkommen-liebe-erstis/?$ /news/herzlich-willkommen-liebe-erstis/
+RedirectMatch 301 ^/unser-schiff-ist-niemals-gekentert-emotionale-ausschulungsfeier-unserer-viertklaessler/?$ /news/unser-schiff-ist-niemals-gekentert-emotionale-ausschulungsfeier-unserer-viertklaessler/
+RedirectMatch 301 ^/bewegungsfestival-des-vfl-wolfsburg-begeistert-105-kinder-der-muehlenbergschule-osloss/?$ /news/bewegungsfestival-des-vfl-wolfsburg-begeistert-105-kinder-der-muehlenbergschule-osloss/
+RedirectMatch 301 ^/umweltprojekttag-an-der-muehlenbergschule-osloss-gemeinsam-fuer-eine-saubere-zukunft/?$ /news/umweltprojekttag-an-der-muehlenbergschule-osloss-gemeinsam-fuer-eine-saubere-zukunft/
+RedirectMatch 301 ^/klassenfahrt-nach-sankt-andreasberg/?$ /news/klassenfahrt-nach-sankt-andreasberg/
+RedirectMatch 301 ^/julian-charriere-midnight-zone/?$ /news/julian-charriere-midnight-zone/
+RedirectMatch 301 ^/gemeinsam-stark-jahrgangsuebergreifendes-lesen-in-unserer-schule/?$ /news/gemeinsam-stark-jahrgangsuebergreifendes-lesen-in-unserer-schule/
+RedirectMatch 301 ^/7067-2/?$ /news/7067-2/
+RedirectMatch 301 ^/eine-freundschaftsbank-fuer-mehr-gemeinschaft/?$ /news/eine-freundschaftsbank-fuer-mehr-gemeinschaft/
+RedirectMatch 301 ^/schulimkerei-startet-wieder/?$ /news/schulimkerei-startet-wieder/
+RedirectMatch 301 ^/mit-den-huehnern-beim-tierarzt/?$ /news/mit-den-huehnern-beim-tierarzt/
+RedirectMatch 301 ^/im-wald-ist-viel-los/?$ /news/im-wald-ist-viel-los/
+RedirectMatch 301 ^/low-t-ball-turnier/?$ /news/low-t-ball-turnier/
+RedirectMatch 301 ^/trommelzauber-bantamba/?$ /news/trommelzauber-bantamba/
+RedirectMatch 301 ^/will-gmehling-begeistert-bei-autorenlesung-an-der-muehlenbergschule-in-osloss/?$ /news/will-gmehling-begeistert-bei-autorenlesung-an-der-muehlenbergschule-in-osloss/
+RedirectMatch 301 ^/unsere-absprachen-fuers-miteinander/?$ /news/unsere-absprachen-fuers-miteinander/
+RedirectMatch 301 ^/woelfi-vom-vfl-wolfsburg-zu-besuch/?$ /news/woelfi-vom-vfl-wolfsburg-zu-besuch/
+RedirectMatch 301 ^/6568-2/?$ /news/6568-2/
+RedirectMatch 301 ^/herzlich-willkommen-liebe-erstklaessler-3/?$ /news/herzlich-willkommen-liebe-erstklaessler-3/
+RedirectMatch 301 ^/vorlesen-mit-den-patenkindern/?$ /news/vorlesen-mit-den-patenkindern/
+RedirectMatch 301 ^/honigschleudern-mit-imker-ulli-binnewies/?$ /news/honigschleudern-mit-imker-ulli-binnewies/
+RedirectMatch 301 ^/zauberwuerfelknobeleien/?$ /news/zauberwuerfelknobeleien/
+RedirectMatch 301 ^/6496-2/?$ /news/6496-2/
+RedirectMatch 301 ^/spannende-einblicke-in-die-welt-der-bienen/?$ /news/spannende-einblicke-in-die-welt-der-bienen/
+RedirectMatch 301 ^/zirkusprojektwoche-an-der-muehlenbergschule-ein-magisches-erlebnis-fuer-95-kinder/?$ /news/zirkusprojektwoche-an-der-muehlenbergschule-ein-magisches-erlebnis-fuer-95-kinder/
+RedirectMatch 301 ^/wer-will-fleissige-hausmeister-sehen/?$ /news/wer-will-fleissige-hausmeister-sehen/
+RedirectMatch 301 ^/low-t-ball-turnier-mit-tco/?$ /news/low-t-ball-turnier-mit-tco/
+RedirectMatch 301 ^/schulanmeldetage-fuer-schulanfaenger-im-schuljahr-2026-2027/?$ /news/schulanmeldetage-fuer-schulanfaenger-im-schuljahr-2026-2027/
+RedirectMatch 301 ^/besuch-von-autorin-nina-weger-2/?$ /news/besuch-von-autorin-nina-weger-2/
+RedirectMatch 301 ^/kunstmuseum-leandro-erlich-schwerelos/?$ /news/kunstmuseum-leandro-erlich-schwerelos/
+RedirectMatch 301 ^/weihnachtskekse-backen-im-empatica/?$ /news/weihnachtskekse-backen-im-empatica/
+RedirectMatch 301 ^/adventszauber/?$ /news/adventszauber/
+RedirectMatch 301 ^/handballaktionstag-des-dvnb/?$ /news/handballaktionstag-des-dvnb/
+RedirectMatch 301 ^/umwelttag-in-osloss/?$ /news/umwelttag-in-osloss/
+RedirectMatch 301 ^/halloweenbasteln-im-empatica/?$ /news/halloweenbasteln-im-empatica/
+RedirectMatch 301 ^/sommertennis-beim-tco/?$ /news/sommertennis-beim-tco/
+RedirectMatch 301 ^/feierliches-fahnehissen/?$ /news/feierliches-fahnehissen/
+RedirectMatch 301 ^/wir-sind-umweltschule-ein-kurzvideo/?$ /news/wir-sind-umweltschule-ein-kurzvideo/
+RedirectMatch 301 ^/6180-2/?$ /news/6180-2/
+RedirectMatch 301 ^/sommerfest-2024/?$ /news/sommerfest-2024/
+RedirectMatch 301 ^/neue-team-und-klassenfotos-online/?$ /news/neue-team-und-klassenfotos-online/
+RedirectMatch 301 ^/filmdreh-umweltschule/?$ /news/filmdreh-umweltschule/
+RedirectMatch 301 ^/herzlich-willkommen-liebe-erstklaessler-2/?$ /news/herzlich-willkommen-liebe-erstklaessler-2/
+RedirectMatch 301 ^/unser-schulgarten-von-oben-via-drohnenflug/?$ /news/unser-schulgarten-von-oben-via-drohnenflug/
+RedirectMatch 301 ^/schwerpunkt-umweltschule-muellmanagement/?$ /news/schwerpunkt-umweltschule-muellmanagement/
+RedirectMatch 301 ^/da-ist-er-unser-erster-schuleigener-honig/?$ /news/da-ist-er-unser-erster-schuleigener-honig/
+RedirectMatch 301 ^/vernissage-im-empatica/?$ /news/vernissage-im-empatica/
+RedirectMatch 301 ^/muehlenbergschule-osloss-goes-on-instagram/?$ /news/muehlenbergschule-osloss-goes-on-instagram/
+RedirectMatch 301 ^/der-honig-wird-geschleudert/?$ /news/der-honig-wird-geschleudert/
+RedirectMatch 301 ^/bundesjugendspiele-und-sponsorenlauf-2/?$ /news/bundesjugendspiele-und-sponsorenlauf-2/
+RedirectMatch 301 ^/16-kg-honig-ende-mai-wird-geschleudert/?$ /news/16-kg-honig-ende-mai-wird-geschleudert/
+RedirectMatch 301 ^/lesen-im-freien-was-gibt-es-schoeneres/?$ /news/lesen-im-freien-was-gibt-es-schoeneres/
+RedirectMatch 301 ^/schulausflug-in-den-elbauenpark/?$ /news/schulausflug-in-den-elbauenpark/
+RedirectMatch 301 ^/aktuelles-aus-der-schulimkerei/?$ /news/aktuelles-aus-der-schulimkerei/
+RedirectMatch 301 ^/die-9-sinfonie-der-tiere-nimmerland-theater-zu-besuch/?$ /news/die-9-sinfonie-der-tiere-nimmerland-theater-zu-besuch/
+RedirectMatch 301 ^/einweihung-der-imkeranzuege/?$ /news/einweihung-der-imkeranzuege/
+RedirectMatch 301 ^/erstes-fruehstueck-mit-frischen-schulhuehnereiern/?$ /news/erstes-fruehstueck-mit-frischen-schulhuehnereiern/
+RedirectMatch 301 ^/unsere-bienen-sind-da/?$ /news/unsere-bienen-sind-da/
+RedirectMatch 301 ^/die-huehner-sind-los/?$ /news/die-huehner-sind-los/
+RedirectMatch 301 ^/schiffe-aus-naturmaterialien/?$ /news/schiffe-aus-naturmaterialien/
+RedirectMatch 301 ^/minigolf/?$ /news/minigolf/
+RedirectMatch 301 ^/summ-summ-summ-bienchen-summ-herum/?$ /news/summ-summ-summ-bienchen-summ-herum/
+RedirectMatch 301 ^/eine-futterglocke-von-der-feuerwehr/?$ /news/eine-futterglocke-von-der-feuerwehr/
+RedirectMatch 301 ^/schreib-mal-wieder-briefe-fuer-unsere-bewohner-im-empatica/?$ /news/schreib-mal-wieder-briefe-fuer-unsere-bewohner-im-empatica/
+RedirectMatch 301 ^/spendenaktion-der-lsw-ein-huehnermobil/?$ /news/spendenaktion-der-lsw-ein-huehnermobil/
+RedirectMatch 301 ^/aus-dem-sportunterricht/?$ /news/aus-dem-sportunterricht/
+RedirectMatch 301 ^/frohe-weihnachten-und-ein-gutes-neues-jahr/?$ /news/frohe-weihnachten-und-ein-gutes-neues-jahr/
+RedirectMatch 301 ^/lebendiger-adventskalender/?$ /news/lebendiger-adventskalender/
+RedirectMatch 301 ^/besuch-im-kunstmuseum/?$ /news/besuch-im-kunstmuseum/
+RedirectMatch 301 ^/winterwonderland/?$ /news/winterwonderland/
+RedirectMatch 301 ^/neue-kunstprojekte-online-2/?$ /news/neue-kunstprojekte-online-2/
+RedirectMatch 301 ^/bundesweiter-vorlesetag-im-empatica/?$ /news/bundesweiter-vorlesetag-im-empatica/
+RedirectMatch 301 ^/so-schoen-ist-das-dorfleben-kastanientag-im-empatica/?$ /news/so-schoen-ist-das-dorfleben-kastanientag-im-empatica/
+RedirectMatch 301 ^/besuch-von-autorin-nina-weger/?$ /news/besuch-von-autorin-nina-weger/
+RedirectMatch 301 ^/besuch-vom-imker/?$ /news/besuch-vom-imker/
+RedirectMatch 301 ^/schuleingangsuntersuchung-online-terminvergabe/?$ /news/schuleingangsuntersuchung-online-terminvergabe/
+RedirectMatch 301 ^/neue-klassen-und-kollegiumsfotos-online/?$ /news/neue-klassen-und-kollegiumsfotos-online/
+RedirectMatch 301 ^/stark-auch-ohne-muckis/?$ /news/stark-auch-ohne-muckis/
+RedirectMatch 301 ^/herzlich-willkommen-liebe-erstklaessler/?$ /news/herzlich-willkommen-liebe-erstklaessler/
+RedirectMatch 301 ^/neue-fahrzeuge-fuer-den-schulhof/?$ /news/neue-fahrzeuge-fuer-den-schulhof/
+RedirectMatch 301 ^/neue-kunstprojekte-online/?$ /news/neue-kunstprojekte-online/
+RedirectMatch 301 ^/chronik-online/?$ /news/chronik-online/
+RedirectMatch 301 ^/ausschulungsfeier-der-viertklaessler/?$ /news/ausschulungsfeier-der-viertklaessler/
+RedirectMatch 301 ^/urkundenehrung-der-bundesjugendspiele/?$ /news/urkundenehrung-der-bundesjugendspiele/
+RedirectMatch 301 ^/bildungsurlaub-der-igm-wolfburg-2023/?$ /news/bildungsurlaub-der-igm-wolfburg-2023/
+RedirectMatch 301 ^/abschlussvorspiel-der-kms-gifhorn/?$ /news/abschlussvorspiel-der-kms-gifhorn/
+RedirectMatch 301 ^/bundesjugendspiele/?$ /news/bundesjugendspiele/
+RedirectMatch 301 ^/was-macht-ein-foerster/?$ /news/was-macht-ein-foerster/
+RedirectMatch 301 ^/instrumentenkarussell-mit-der-kms-gifhorn-2/?$ /news/instrumentenkarussell-mit-der-kms-gifhorn-2/
+RedirectMatch 301 ^/die-waldgeister-sind-los/?$ /news/die-waldgeister-sind-los/
+RedirectMatch 301 ^/schulausflug-ins-otterzentrum/?$ /news/schulausflug-ins-otterzentrum/
+RedirectMatch 301 ^/eine-eiche-erzaehlt/?$ /news/eine-eiche-erzaehlt/
+RedirectMatch 301 ^/wir-machen-die-musik/?$ /news/wir-machen-die-musik/
+RedirectMatch 301 ^/zu-besuch-bei-storchenbetreuerin-rita-lunde/?$ /news/zu-besuch-bei-storchenbetreuerin-rita-lunde/
+RedirectMatch 301 ^/malaktion-des-dlr-deutsches-zentrum-fuer-luft-und-raumfahrt/?$ /news/malaktion-des-dlr-deutsches-zentrum-fuer-luft-und-raumfahrt/
+RedirectMatch 301 ^/trommelzauber-impressionen/?$ /news/trommelzauber-impressionen/
+RedirectMatch 301 ^/trommelzauber/?$ /news/trommelzauber/
+RedirectMatch 301 ^/kreativ-im-empatica/?$ /news/kreativ-im-empatica/
+RedirectMatch 301 ^/waldspaziergang-mit-land-art-erfahrung/?$ /news/waldspaziergang-mit-land-art-erfahrung/
+RedirectMatch 301 ^/fasching-2023/?$ /news/fasching-2023/
+RedirectMatch 301 ^/baumpilze-kobel-nusskacker-und-co/?$ /news/baumpilze-kobel-nusskacker-und-co/
+RedirectMatch 301 ^/herzlichen-willkommen-frau-kerksieck/?$ /news/herzlichen-willkommen-frau-kerksieck/
+RedirectMatch 301 ^/einweihung-des-neuen-tischkickers/?$ /news/einweihung-des-neuen-tischkickers/
+RedirectMatch 301 ^/happy-nikolaus/?$ /news/happy-nikolaus/
+RedirectMatch 301 ^/ein-weidentipi-entsteht/?$ /news/ein-weidentipi-entsteht/
+RedirectMatch 301 ^/bundesweiter-vorlesetag/?$ /news/bundesweiter-vorlesetag/
+RedirectMatch 301 ^/internationale-nachhaltigkeitsschule/?$ /news/internationale-nachhaltigkeitsschule/
+RedirectMatch 301 ^/zirkus-zaretti/?$ /news/zirkus-zaretti/
+RedirectMatch 301 ^/neue-klassenfotos-sowie-ein-teamfoto-online/?$ /news/neue-klassenfotos-sowie-ein-teamfoto-online/
+RedirectMatch 301 ^/impressionen-aus-der-wald-ag/?$ /news/impressionen-aus-der-wald-ag/
+RedirectMatch 301 ^/sport-oskar-der-united-kids-foundation/?$ /news/sport-oskar-der-united-kids-foundation/
+RedirectMatch 301 ^/schulobst-aktionsprogramm/?$ /news/schulobst-aktionsprogramm/
+RedirectMatch 301 ^/vernissage-im-haus-empatica/?$ /news/vernissage-im-haus-empatica/
+RedirectMatch 301 ^/einschulung-2022/?$ /news/einschulung-2022/
+RedirectMatch 301 ^/bildungsurlaub-der-igm-im-schulgarten/?$ /news/bildungsurlaub-der-igm-im-schulgarten/
+RedirectMatch 301 ^/ausschulungsfeier-klasse-4/?$ /news/ausschulungsfeier-klasse-4/
+RedirectMatch 301 ^/instrumentenkarussell-mit-der-kms-gifhorn/?$ /news/instrumentenkarussell-mit-der-kms-gifhorn/
+RedirectMatch 301 ^/von-der-raupe-zum-schmetterling/?$ /news/von-der-raupe-zum-schmetterling/
+RedirectMatch 301 ^/schulgartenerkundung/?$ /news/schulgartenerkundung/
+RedirectMatch 301 ^/bundesjugendspiele-und-sponsorenlauf/?$ /news/bundesjugendspiele-und-sponsorenlauf/
+RedirectMatch 301 ^/ausflug-in-den-magdeburger-zoo/?$ /news/ausflug-in-den-magdeburger-zoo/
+RedirectMatch 301 ^/ein-schulgarten-entsteht/?$ /news/ein-schulgarten-entsteht/
+RedirectMatch 301 ^/fruehlingsgruesse/?$ /news/fruehlingsgruesse/
+RedirectMatch 301 ^/wald-und-erlebnis-ag/?$ /news/wald-und-erlebnis-ag/
+RedirectMatch 301 ^/neues-sandspielzeug-danke-lieber-foerderverein/?$ /news/neues-sandspielzeug-danke-lieber-foerderverein/
+RedirectMatch 301 ^/rumpelstilzchen/?$ /news/rumpelstilzchen/
+RedirectMatch 301 ^/eine-besondere-weihnachtskrippe/?$ /news/eine-besondere-weihnachtskrippe/
+RedirectMatch 301 ^/autorin-katja-frixe-zu-besuch/?$ /news/autorin-katja-frixe-zu-besuch/
+RedirectMatch 301 ^/die-digitale-tafel-ist-da/?$ /news/die-digitale-tafel-ist-da/
+RedirectMatch 301 ^/video-klassenraum-kl-4/?$ /news/video-klassenraum-kl-4/
+RedirectMatch 301 ^/einschulung-04-09-2021/?$ /news/einschulung-04-09-2021/
+RedirectMatch 301 ^/danke-fuer-eure-likes/?$ /news/danke-fuer-eure-likes/
+RedirectMatch 301 ^/verabschiedung-unserer-schulleiterin-frau-schriek/?$ /news/verabschiedung-unserer-schulleiterin-frau-schriek/
+RedirectMatch 301 ^/informationen-zum-infektionsschutz-an-der-gs-muehlenbergschule-osloss/?$ /news/informationen-zum-infektionsschutz-an-der-gs-muehlenbergschule-osloss/
+RedirectMatch 301 ^/krankheitssymptome-darf-mein-kind-in-die-schule/?$ /news/krankheitssymptome-darf-mein-kind-in-die-schule/
+RedirectMatch 301 ^/hygieneplan-der-gs-muehlenbergschule-osloss/?$ /news/hygieneplan-der-gs-muehlenbergschule-osloss/
+RedirectMatch 301 ^/hinweise-bezueglich-der-infektionskrankheit-covid-19-corona-virus/?$ /news/hinweise-bezueglich-der-infektionskrankheit-covid-19-corona-virus/
+# <<< NEWS-REDIRECTS
